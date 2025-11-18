@@ -27,6 +27,7 @@ from arelle.XmlValidate import VALID
 from .XuleValue import model_to_xule_entity, model_to_xule_period, model_to_xule_unit, XuleDimensionCube
 import collections
 import datetime
+import decimal
 import itertools as it   
 from .XuleRunTime import XuleProcessingError
 
@@ -256,10 +257,17 @@ def get_decimalized_value(fact_a, fact_b, xule_context):
     fact_a_decimals = get_decimals(fact_a, xule_context)
     fact_b_decimals = get_decimals(fact_b, xule_context)
 
+    def _round_if_finite(val, val_decimals, min_decs):
+        if val_decimals == float('inf'):
+            return val.xValue
+        if isinstance(val, decimal.Decimal) and not val.is_finite():
+            return val.xValue
+        return round(val, min_decs)
+
     min_decimals = min(fact_a_decimals, fact_b_decimals)
 
-    fact_a_value = fact_a.xValue if fact_a_decimals == float('inf') else round(fact_a.xValue, min_decimals)
-    fact_b_value = fact_b.xValue if fact_b_decimals == float('inf') else round(fact_b.xValue, min_decimals)
+    fact_a_value = _round_if_finite(fact_a.xValue, fact_a_decimals, min_decimals)
+    fact_b_value = _round_if_finite(fact_b.xValue, fact_b_decimals, min_decimals)
 
     return fact_a_value, fact_a_decimals, fact_b_value, fact_b_decimals
 
